@@ -4,6 +4,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/bearpro/distributed-ping/node"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -36,19 +38,34 @@ type ControllerState struct {
 type ApplicationContext struct {
 	Config          Config
 	ControllerState *ControllerState
+	NodeInfo        node.NodeInfo
 }
 
-func mkAppCtx(cfg Config) ApplicationContext {
+func mkAppCtx(
+	cfg Config,
+	node_info node.NodeInfo,
+) ApplicationContext {
 	return ApplicationContext{
-		Config: cfg,
+		Config:   cfg,
+		NodeInfo: node_info,
 	}
 }
 
 func main() {
 	cfg := loadConfig()
-	ctx := mkAppCtx(cfg)
+	node_info, err := node.FetchNodeInfo()
+	if err != nil {
+		os.Exit(1)
+	}
+
+	ctx := mkAppCtx(cfg, *node_info)
 
 	router := gin.Default()
+
+	router.GET("/api/node", func(c *gin.Context) {
+		c.JSON(200, ctx.NodeInfo)
+	})
+
 	router.GET("/api/controller", func(c *gin.Context) {
 		if ctx.Config.IsController {
 			response := gin.H{
