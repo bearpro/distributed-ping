@@ -1,28 +1,22 @@
 package node
 
-// ping.go is responsible for executing local ping commands and translating
-// command output into transport-level ping results.
+// ping.go is responsible for executing local ICMP echo requests and
+// translating network responses into transport-level ping results.
 
 import (
-	"context"
-	"os/exec"
-	"regexp"
-	"strconv"
+	"net"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/bearpro/distributed-ping/model"
+	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv4"
 )
 
-var pingLatencyPattern = regexp.MustCompile(`time=([0-9.]+)`)
+const icmpProtocolIPv4 = 1
 
 func executePing(identity model.NodeIdentity, req model.PingRequest) model.PingResult {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "ping", "-c", "1", "-W", "2", req.Target)
-	output, err := cmd.CombinedOutput()
-
 	result := model.PingResult{
 		RequestID:      req.ID,
 		Executor:       identity,
@@ -30,38 +24,80 @@ func executePing(identity model.NodeIdentity, req model.PingRequest) model.PingR
 		ObservedAt:     time.Now().UTC(),
 	}
 
-	out := string(output)
+	dst, err := net.ResolveIPAddr("ip4", req.Target)
 	if err != nil {
-		result.Error = summarizeCommandError(out, err)
+		result.Error = summarizeError(err)
 		return result
 	}
 
-	result.Success = true
-	result.LatencyMs = extractLatency(out)
-	return result
+	conn, err := icmp.ListenPacket("udp4", "0.0.0.0")
+	if err != nil {
+		result.Error = summarizeError(err)
+		return result
+	}
+	defer conn.Close()
+
+	deadline := time.Now().Add(5 * time.Second)
+	if err := conn.SetDeadline(deadline); err != nil {
+		result.Error = summarizeError(err)
+		return result
+	}
+
+	echoID := os.Getpid() & 0xffff
+	echoSeq := int(time.Now().UnixNano() & 0xffff)
+	message := icmp.Message{
+		Type: ipv4.ICMPTypeEcho,
+		Code: 0,
+		Body: &icmp.Echo{
+			ID:   echoID,
+			Seq:  echoSeq,
+			Data: []byte("distributed-ping"),
+		},
+	}
+
+	payload, err := message.Marshal(nil)
+	if err != nil {
+		result.Error = summarizeError(err)
+		return result
+	}
+
+	startedAt := time.Now()
+	if _, err := conn.WriteTo(payload, &net.UDPAddr{IP: dst.IP}); err != nil {
+		result.Error = summarizeError(err)
+		return result
+	}
+
+	buffer := make([]byte, 1500)
+	for {
+		n, _, err := conn.ReadFrom(buffer)
+		if err != nil {
+			result.Error = summarizeError(err)
+			return result
+		}
+
+		reply, err := icmp.ParseMessage(icmpProtocolIPv4, buffer[:n])
+		if err != nil {
+			continue
+		}
+		if reply.Type != ipv4.ICMPTypeEchoReply {
+			continue
+		}
+
+		body, ok := reply.Body.(*icmp.Echo)
+		if !ok || body.ID != echoID || body.Seq != echoSeq {
+			continue
+		}
+
+		result.Success = true
+		result.LatencyMs = float64(time.Since(startedAt).Microseconds()) / 1000
+		return result
+	}
 }
 
-func summarizeCommandError(output string, err error) string {
-	trimmed := strings.TrimSpace(output)
-	if trimmed == "" {
-		return err.Error()
-	}
+func summarizeError(err error) string {
+	trimmed := strings.TrimSpace(err.Error())
 	if len(trimmed) > 240 {
 		trimmed = trimmed[:240]
 	}
 	return trimmed
-}
-
-func extractLatency(output string) float64 {
-	matches := pingLatencyPattern.FindStringSubmatch(output)
-	if len(matches) != 2 {
-		return 0
-	}
-
-	value, err := strconv.ParseFloat(matches[1], 64)
-	if err != nil {
-		return 0
-	}
-
-	return value
 }
