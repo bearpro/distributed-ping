@@ -19,6 +19,11 @@
             gotools
             golangci-lint
             air
+            
+            elmPackages.elm
+            elmPackages.elm-language-server
+            elmPackages.elm-format
+            elmPackages.elm-test
           ];
 
           shellHook = ''
