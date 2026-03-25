@@ -14,3 +14,4 @@ dev-backend-watch:
 
 dev-frontend:
 	cd $(UI_DIR) && elm make src/Main.elm --output=elm.js
+
