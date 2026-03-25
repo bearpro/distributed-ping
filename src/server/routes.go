@@ -35,14 +35,38 @@ func registerRoutes(router *gin.Engine, app Application) {
 	router.GET("/api/controller/ping-requests/:id/results", handlers.getControllerPingRequestResults)
 }
 
+// healthz godoc
+//
+//	@Summary		Health check
+//	@Description	Returns backend health status.
+//	@Tags			system
+//	@Produce		json
+//	@Success		200	{object}	HealthResponse
+//	@Router			/healthz [get]
 func (h routeHandlers) healthz(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// getApplication godoc
+//
+//	@Summary		Application snapshot
+//	@Description	Returns the full in-memory application snapshot.
+//	@Tags			application
+//	@Produce		json
+//	@Success		200	{object}	ApplicationSnapshot
+//	@Router			/api/application [get]
 func (h routeHandlers) getApplication(c *gin.Context) {
 	c.JSON(http.StatusOK, h.app.Snapshot())
 }
 
+// getNode godoc
+//
+//	@Summary		Node summary
+//	@Description	Returns local node metadata and queue counters.
+//	@Tags			node
+//	@Produce		json
+//	@Success		200	{object}	NodeSummaryResponse
+//	@Router			/api/node [get]
 func (h routeHandlers) getNode(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"node":                h.app.Node.Config.Identity,
@@ -53,12 +77,32 @@ func (h routeHandlers) getNode(c *gin.Context) {
 	})
 }
 
+// listNodePingRequests godoc
+//
+//	@Summary		List submitted node requests
+//	@Description	Returns ping requests submitted by the current node.
+//	@Tags			node
+//	@Produce		json
+//	@Success		200	{object}	NodePingRequestsResponse
+//	@Router			/api/node/ping-requests [get]
 func (h routeHandlers) listNodePingRequests(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"requests": h.app.Node.SubmittedRequests(),
 	})
 }
 
+// createNodePingRequest godoc
+//
+//	@Summary		Create node ping request
+//	@Description	Creates a ping request through the configured upstream controller.
+//	@Tags			node
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		CreateNodePingRequestBody	true	"Ping request payload"
+//	@Success		201		{object}	PingRequestResponse
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		502		{object}	ErrorResponse
+//	@Router			/api/node/ping-requests [post]
 func (h routeHandlers) createNodePingRequest(c *gin.Context) {
 	var body struct {
 		Target string `json:"target" binding:"required"`
@@ -77,6 +121,17 @@ func (h routeHandlers) createNodePingRequest(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"request": req})
 }
 
+// getNodePingRequestResults godoc
+//
+//	@Summary		Get node ping request results
+//	@Description	Refreshes and returns results for a submitted node ping request.
+//	@Tags			node
+//	@Produce		json
+//	@Param			id	path		string	true	"Ping request ID"
+//	@Success		200	{object}	PingResultsResponse
+//	@Failure		404	{object}	ErrorResponse
+//	@Failure		502	{object}	ErrorResponse
+//	@Router			/api/node/ping-requests/{id}/results [get]
 func (h routeHandlers) getNodePingRequestResults(c *gin.Context) {
 	results, err := h.app.Node.RefreshRequestResults(c.Request.Context(), c.Param("id"))
 	if err != nil {
@@ -91,6 +146,15 @@ func (h routeHandlers) getNodePingRequestResults(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"results": results})
 }
 
+// getController godoc
+//
+//	@Summary		Controller summary
+//	@Description	Returns controller counters and current request offset.
+//	@Tags			controller
+//	@Produce		json
+//	@Success		200	{object}	ControllerSummaryResponse
+//	@Failure		400	{object}	ErrorResponse
+//	@Router			/api/controller [get]
 func (h routeHandlers) getController(c *gin.Context) {
 	if !ensureController(c, h.app.Controller) {
 		return
@@ -106,6 +170,15 @@ func (h routeHandlers) getController(c *gin.Context) {
 	})
 }
 
+// listControllerNodes godoc
+//
+//	@Summary		List connected controller nodes
+//	@Description	Returns nodes currently known by the controller.
+//	@Tags			controller
+//	@Produce		json
+//	@Success		200	{object}	ControllerNodesResponse
+//	@Failure		400	{object}	ErrorResponse
+//	@Router			/api/controller/nodes [get]
 func (h routeHandlers) listControllerNodes(c *gin.Context) {
 	if !ensureController(c, h.app.Controller) {
 		return
@@ -114,6 +187,22 @@ func (h routeHandlers) listControllerNodes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"nodes": h.app.Controller.NodesSnapshot()})
 }
 
+// listControllerPingRequests godoc
+//
+//	@Summary		List controller ping requests
+//	@Description	Returns controller-managed ping requests using offset pagination.
+//	@Tags			controller
+//	@Produce		json
+//	@Param			from_offset			query		int		false	"Read offset"	default(0)
+//	@Param			limit				query		int		false	"Page size"	default(100)
+//	@Param			X-Node-ID			header		string	false	"Node ID for heartbeat registration"
+//	@Param			X-Node-Lat			header		number	false	"Node latitude"
+//	@Param			X-Node-Lon			header		number	false	"Node longitude"
+//	@Param			X-Node-Organization	header		string	false	"Node organization"
+//	@Param			X-Node-Role			header		string	false	"Node role"
+//	@Success		200					{object}	ControllerPingRequestsResponse
+//	@Failure		400					{object}	ErrorResponse
+//	@Router			/api/controller/ping-requests [get]
 func (h routeHandlers) listControllerPingRequests(c *gin.Context) {
 	if !ensureController(c, h.app.Controller) {
 		return
@@ -133,6 +222,17 @@ func (h routeHandlers) listControllerPingRequests(c *gin.Context) {
 	})
 }
 
+// createControllerPingRequest godoc
+//
+//	@Summary		Create controller ping request
+//	@Description	Creates a ping request directly on the controller and dispatches it locally.
+//	@Tags			controller
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		CreateControllerPingRequestBody	true	"Ping request payload"
+//	@Success		201		{object}	PingRequestResponse
+//	@Failure		400		{object}	ErrorResponse
+//	@Router			/api/controller/ping-requests [post]
 func (h routeHandlers) createControllerPingRequest(c *gin.Context) {
 	if !ensureController(c, h.app.Controller) {
 		return
@@ -152,6 +252,18 @@ func (h routeHandlers) createControllerPingRequest(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"request": req})
 }
 
+// createControllerPingResult godoc
+//
+//	@Summary		Submit controller ping result
+//	@Description	Stores a ping result for an existing controller request.
+//	@Tags			controller
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		model.PingResult	true	"Ping result payload"
+//	@Success		202		{object}	AcceptedResponse
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		404		{object}	ErrorResponse
+//	@Router			/api/controller/ping-results [post]
 func (h routeHandlers) createControllerPingResult(c *gin.Context) {
 	if !ensureController(c, h.app.Controller) {
 		return
@@ -181,6 +293,17 @@ func (h routeHandlers) createControllerPingResult(c *gin.Context) {
 	c.JSON(http.StatusAccepted, gin.H{"status": "accepted"})
 }
 
+// getControllerPingRequestResults godoc
+//
+//	@Summary		Get controller ping request results
+//	@Description	Returns a controller request and the results collected for it so far.
+//	@Tags			controller
+//	@Produce		json
+//	@Param			id	path		string	true	"Ping request ID"
+//	@Success		200	{object}	ControllerPingRequestResultsResponse
+//	@Failure		400	{object}	ErrorResponse
+//	@Failure		404	{object}	ErrorResponse
+//	@Router			/api/controller/ping-requests/{id}/results [get]
 func (h routeHandlers) getControllerPingRequestResults(c *gin.Context) {
 	if !ensureController(c, h.app.Controller) {
 		return

@@ -1,0 +1,613 @@
+basePath: /
+definitions:
+  controller.Configuration:
+    properties:
+      staleNodeAfter:
+        $ref: '#/definitions/time.Duration'
+    type: object
+  controller.Snapshot:
+    properties:
+      config:
+        $ref: '#/definitions/controller.Configuration'
+      state:
+        $ref: '#/definitions/controller.StateSnapshot'
+    type: object
+  controller.StateSnapshot:
+    properties:
+      connected_nodes:
+        items:
+          $ref: '#/definitions/model.ConnectedNode'
+        type: array
+      ping_requests:
+        items:
+          $ref: '#/definitions/model.PingRequest'
+        type: array
+      ping_results:
+        items:
+          $ref: '#/definitions/model.PingResult'
+        type: array
+    type: object
+  main.AcceptedResponse:
+    properties:
+      status:
+        example: accepted
+        type: string
+    type: object
+  main.ApplicationSnapshot:
+    properties:
+      config:
+        $ref: '#/definitions/main.Config'
+      controller:
+        $ref: '#/definitions/controller.Snapshot'
+      node:
+        $ref: '#/definitions/node.Snapshot'
+    type: object
+  main.Config:
+    properties:
+      controllerURL:
+        type: string
+      httptimeout:
+        $ref: '#/definitions/time.Duration'
+      isController:
+        type: boolean
+      listenAddr:
+        type: string
+      nodeID:
+        type: string
+      pollInterval:
+        $ref: '#/definitions/time.Duration'
+      staleNodeAfter:
+        $ref: '#/definitions/time.Duration'
+    type: object
+  main.ControllerNodesResponse:
+    properties:
+      nodes:
+        items:
+          $ref: '#/definitions/model.ConnectedNode'
+        type: array
+    type: object
+  main.ControllerPingRequestResultsResponse:
+    properties:
+      collecting:
+        type: boolean
+      request:
+        $ref: '#/definitions/model.PingRequest'
+      results:
+        items:
+          $ref: '#/definitions/model.PingResult'
+        type: array
+    type: object
+  main.ControllerPingRequestsResponse:
+    properties:
+      current_offset:
+        example: 140
+        type: integer
+      next_offset:
+        example: 100
+        type: integer
+      requests:
+        items:
+          $ref: '#/definitions/model.PingRequest'
+        type: array
+    type: object
+  main.ControllerSummaryResponse:
+    properties:
+      connected_nodes:
+        example: 4
+        type: integer
+      current_offset:
+        example: 12
+        type: integer
+      ping_requests:
+        example: 8
+        type: integer
+      ping_results:
+        example: 16
+        type: integer
+      status:
+        example: ok
+        type: string
+    type: object
+  main.CreateControllerPingRequestBody:
+    properties:
+      source_node_id:
+        example: node-west-1
+        type: string
+      target:
+        example: example.com
+        type: string
+    required:
+    - target
+    type: object
+  main.CreateNodePingRequestBody:
+    properties:
+      target:
+        example: 1.1.1.1
+        type: string
+    required:
+    - target
+    type: object
+  main.ErrorResponse:
+    properties:
+      error:
+        example: request not found
+        type: string
+    type: object
+  main.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  main.NodePingRequestsResponse:
+    properties:
+      requests:
+        items:
+          $ref: '#/definitions/model.SubmittedPingRequest'
+        type: array
+    type: object
+  main.NodeSummaryResponse:
+    properties:
+      current_offset:
+        example: 12
+        type: integer
+      is_controller:
+        type: boolean
+      node:
+        $ref: '#/definitions/model.NodeInfo'
+      submitted_requests:
+        example: 3
+        type: integer
+      upstream_controller:
+        example: http://controller:8081
+        type: string
+    type: object
+  main.PingRequestResponse:
+    properties:
+      request:
+        $ref: '#/definitions/model.PingRequest'
+    type: object
+  main.PingResultsResponse:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/model.PingResult'
+        type: array
+    type: object
+  model.ConnectedNode:
+    properties:
+      last_contact:
+        type: string
+      location:
+        $ref: '#/definitions/model.Location'
+      node_id:
+        type: string
+      organization:
+        type: string
+      role:
+        $ref: '#/definitions/model.NodeRole'
+    type: object
+  model.Location:
+    properties:
+      lat:
+        type: number
+      lon:
+        type: number
+    type: object
+  model.NodeIdentity:
+    properties:
+      location:
+        $ref: '#/definitions/model.Location'
+      node_id:
+        type: string
+      organization:
+        type: string
+      role:
+        $ref: '#/definitions/model.NodeRole'
+    type: object
+  model.NodeInfo:
+    properties:
+      location:
+        $ref: '#/definitions/model.Location'
+      node_id:
+        type: string
+      organization:
+        type: string
+      public_ip:
+        type: string
+      role:
+        $ref: '#/definitions/model.NodeRole'
+    type: object
+  model.NodeRole:
+    enum:
+    - worker
+    - controller
+    - hybrid
+    type: string
+    x-enum-varnames:
+    - NodeRoleWorker
+    - NodeRoleController
+    - NodeRoleHybrid
+  model.PingRequest:
+    properties:
+      collect_until:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      source_node_id:
+        type: string
+      target:
+        type: string
+    type: object
+  model.PingResult:
+    properties:
+      error:
+        type: string
+      executor:
+        $ref: '#/definitions/model.NodeIdentity'
+      latency_ms:
+        type: number
+      observed_at:
+        type: string
+      reporter_node_id:
+        type: string
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  model.SubmittedPingRequest:
+    properties:
+      cached_results:
+        items:
+          $ref: '#/definitions/model.PingResult'
+        type: array
+      last_results_sync_at:
+        type: string
+      request:
+        $ref: '#/definitions/model.PingRequest'
+    type: object
+  node.Configuration:
+    properties:
+      httptimeout:
+        $ref: '#/definitions/time.Duration'
+      identity:
+        $ref: '#/definitions/model.NodeInfo'
+      pollInterval:
+        $ref: '#/definitions/time.Duration'
+      upstreamURL:
+        type: string
+    type: object
+  node.Snapshot:
+    properties:
+      config:
+        $ref: '#/definitions/node.Configuration'
+      state:
+        $ref: '#/definitions/node.StateSnapshot'
+    type: object
+  node.StateSnapshot:
+    properties:
+      current_offset:
+        type: integer
+      executed_request_ids:
+        items:
+          type: string
+        type: array
+      offset_known:
+        type: boolean
+      relayed_result_keys:
+        items:
+          type: string
+        type: array
+      submitted_requests:
+        items:
+          $ref: '#/definitions/model.SubmittedPingRequest'
+        type: array
+    type: object
+  time.Duration:
+    enum:
+    - -9223372036854775808
+    - 9223372036854775807
+    - 1
+    - 1000
+    - 1000000
+    - 1000000000
+    - 60000000000
+    - 3600000000000
+    format: int64
+    type: integer
+    x-enum-varnames:
+    - minDuration
+    - maxDuration
+    - Nanosecond
+    - Microsecond
+    - Millisecond
+    - Second
+    - Minute
+    - Hour
+info:
+  contact: {}
+  description: HTTP API for distributed ping nodes and controller coordination.
+  title: Distributed Ping API
+  version: "1.0"
+paths:
+  /api/application:
+    get:
+      description: Returns the full in-memory application snapshot.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ApplicationSnapshot'
+      summary: Application snapshot
+      tags:
+      - application
+  /api/controller:
+    get:
+      description: Returns controller counters and current request offset.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ControllerSummaryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Controller summary
+      tags:
+      - controller
+  /api/controller/nodes:
+    get:
+      description: Returns nodes currently known by the controller.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ControllerNodesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: List connected controller nodes
+      tags:
+      - controller
+  /api/controller/ping-requests:
+    get:
+      description: Returns controller-managed ping requests using offset pagination.
+      parameters:
+      - default: 0
+        description: Read offset
+        in: query
+        name: from_offset
+        type: integer
+      - default: 100
+        description: Page size
+        in: query
+        name: limit
+        type: integer
+      - description: Node ID for heartbeat registration
+        in: header
+        name: X-Node-ID
+        type: string
+      - description: Node latitude
+        in: header
+        name: X-Node-Lat
+        type: number
+      - description: Node longitude
+        in: header
+        name: X-Node-Lon
+        type: number
+      - description: Node organization
+        in: header
+        name: X-Node-Organization
+        type: string
+      - description: Node role
+        in: header
+        name: X-Node-Role
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ControllerPingRequestsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: List controller ping requests
+      tags:
+      - controller
+    post:
+      consumes:
+      - application/json
+      description: Creates a ping request directly on the controller and dispatches
+        it locally.
+      parameters:
+      - description: Ping request payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/main.CreateControllerPingRequestBody'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/main.PingRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Create controller ping request
+      tags:
+      - controller
+  /api/controller/ping-requests/{id}/results:
+    get:
+      description: Returns a controller request and the results collected for it so
+        far.
+      parameters:
+      - description: Ping request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ControllerPingRequestResultsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Get controller ping request results
+      tags:
+      - controller
+  /api/controller/ping-results:
+    post:
+      consumes:
+      - application/json
+      description: Stores a ping result for an existing controller request.
+      parameters:
+      - description: Ping result payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.PingResult'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/main.AcceptedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Submit controller ping result
+      tags:
+      - controller
+  /api/node:
+    get:
+      description: Returns local node metadata and queue counters.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.NodeSummaryResponse'
+      summary: Node summary
+      tags:
+      - node
+  /api/node/ping-requests:
+    get:
+      description: Returns ping requests submitted by the current node.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.NodePingRequestsResponse'
+      summary: List submitted node requests
+      tags:
+      - node
+    post:
+      consumes:
+      - application/json
+      description: Creates a ping request through the configured upstream controller.
+      parameters:
+      - description: Ping request payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/main.CreateNodePingRequestBody'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/main.PingRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Create node ping request
+      tags:
+      - node
+  /api/node/ping-requests/{id}/results:
+    get:
+      description: Refreshes and returns results for a submitted node ping request.
+      parameters:
+      - description: Ping request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.PingResultsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Get node ping request results
+      tags:
+      - node
+  /healthz:
+    get:
+      description: Returns backend health status.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HealthResponse'
+      summary: Health check
+      tags:
+      - system
+schemes:
+- http
+- https
+swagger: "2.0"

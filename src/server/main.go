@@ -12,9 +12,17 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/bearpro/distributed-ping/docs"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// @title Distributed Ping API
+// @version 1.0
+// @description HTTP API for distributed ping nodes and controller coordination.
+// @BasePath /
+// @schemes http https
 func main() {
 	cfg := loadConfig()
 	logger := log.New(os.Stdout, "", log.LstdFlags|log.LUTC)
@@ -27,6 +35,7 @@ func main() {
 
 	router := gin.Default()
 	router.Use(corsMiddleware())
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	registerRoutes(router, app)
 
 	server := &http.Server{
