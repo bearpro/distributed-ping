@@ -26,6 +26,7 @@ func main() {
 	app.Start(appCtx)
 
 	router := gin.Default()
+	router.Use(corsMiddleware())
 	registerRoutes(router, app)
 
 	server := &http.Server{
@@ -42,5 +43,20 @@ func main() {
 
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logger.Fatalf("server stopped: %v", err)
+	}
+}
+
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, X-Node-ID, X-Node-Lat, X-Node-Lon, X-Node-Organization, X-Node-Role")
+
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+
+		c.Next()
 	}
 }

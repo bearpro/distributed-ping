@@ -1,3 +1,5 @@
 .gopath
 .lazy.lua
+src/server/tmp/
+src/server/.air.toml
 
