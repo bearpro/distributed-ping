@@ -1,23 +1,18 @@
 package node
 
+// node.go owns only self-discovery of node metadata from an external IP info
+// service. Runtime coordination lives in runtime.go.
+
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/bearpro/distributed-ping/model"
 )
-
-type Location struct {
-	Lat float64
-	Lon float64
-}
-
-type NodeInfo struct {
-	IP           string
-	Organization string
-	Location     Location
-}
 
 type ipInfoResponse struct {
 	IP  string `json:"ip"`
@@ -25,8 +20,9 @@ type ipInfoResponse struct {
 	Loc string `json:"loc"` // "52.3068,4.9453"
 }
 
-func FetchNodeInfo() (*NodeInfo, error) {
-	resp, err := http.Get("https://ipinfo.io/json")
+func FetchNodeInfo() (*model.NodeInfo, error) {
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get("https://ipinfo.io/json")
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
@@ -56,12 +52,14 @@ func FetchNodeInfo() (*NodeInfo, error) {
 		return nil, fmt.Errorf("parse longitude: %w", err)
 	}
 
-	return &NodeInfo{
-		IP:           raw.IP,
-		Organization: raw.Org,
-		Location: Location{
-			Lat: lat,
-			Lon: lon,
+	return &model.NodeInfo{
+		NodeIdentity: model.NodeIdentity{
+			Organization: raw.Org,
+			Location: model.Location{
+				Lat: lat,
+				Lon: lon,
+			},
 		},
+		PublicIP: raw.IP,
 	}, nil
 }
