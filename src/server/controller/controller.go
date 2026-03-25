@@ -28,6 +28,17 @@ type Context struct {
 	State  *State
 }
 
+type Snapshot struct {
+	Config Configuration `json:"config"`
+	State  StateSnapshot `json:"state"`
+}
+
+type StateSnapshot struct {
+	ConnectedNodes []model.ConnectedNode `json:"connected_nodes"`
+	PingRequests   []model.PingRequest   `json:"ping_requests"`
+	PingResults    []model.PingResult    `json:"ping_results"`
+}
+
 func NewContext(config Configuration) *Context {
 	return &Context{
 		Config: config,
@@ -35,6 +46,22 @@ func NewContext(config Configuration) *Context {
 			nodes:       make(map[string]model.ConnectedNode),
 			requestByID: make(map[string]model.PingRequest),
 			results:     make(map[string]map[string]model.PingResult),
+		},
+	}
+}
+
+func (ctx *Context) Snapshot() Snapshot {
+	ctx.State.mu.RLock()
+	requests := make([]model.PingRequest, len(ctx.State.requests))
+	copy(requests, ctx.State.requests)
+	ctx.State.mu.RUnlock()
+
+	return Snapshot{
+		Config: ctx.Config,
+		State: StateSnapshot{
+			ConnectedNodes: ctx.NodesSnapshot(),
+			PingRequests:   requests,
+			PingResults:    ctx.AllResults(),
 		},
 	}
 }

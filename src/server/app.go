@@ -19,6 +19,12 @@ type Application struct {
 	Node       *node.Context
 }
 
+type ApplicationSnapshot struct {
+	Config     Config               `json:"config"`
+	Node       node.Snapshot        `json:"node"`
+	Controller *controller.Snapshot `json:"controller,omitempty"`
+}
+
 func newApplication(cfg Config, logger *log.Logger) Application {
 	nodeInfo := loadNodeInfo(cfg, logger)
 
@@ -41,6 +47,18 @@ func newApplication(cfg Config, logger *log.Logger) Application {
 		Controller: controllerCtx,
 		Node:       nodeCtx,
 	}
+}
+
+func (app Application) Snapshot() ApplicationSnapshot {
+	snapshot := ApplicationSnapshot{
+		Config: app.Config,
+		Node:   app.Node.Snapshot(),
+	}
+	if app.Controller != nil {
+		controllerSnapshot := app.Controller.Snapshot()
+		snapshot.Controller = &controllerSnapshot
+	}
+	return snapshot
 }
 
 func (app Application) Start(ctx context.Context) {
