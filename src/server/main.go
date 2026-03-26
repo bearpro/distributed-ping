@@ -37,6 +37,7 @@ func main() {
 	router.Use(corsMiddleware())
 	router.GET("/api/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	registerRoutes(router, app)
+	registerSPAFrontend(router, "app")
 
 	server := &http.Server{
 		Addr:    cfg.ListenAddr,
