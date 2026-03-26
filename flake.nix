@@ -24,6 +24,7 @@
             elmPackages.elm-language-server
             elmPackages.elm-format
             elmPackages.elm-test
+            elmPackages.elm-live
           ];
 
           shellHook = ''

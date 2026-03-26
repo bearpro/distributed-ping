@@ -1,9 +1,7 @@
 module Main exposing (main)
 
 import Browser
-import Html exposing (Html)
-import Html.Events
-import Tabs
+import Html exposing (Html, div, text)
 
 
 type alias Flags =
@@ -11,14 +9,14 @@ type alias Flags =
 
 
 type alias Model =
-    Tabs.Model
+    ()
 
 
 type Msg
-    = TabsMsg Tabs.Msg
+    = NoOp
 
 
-main : Program Flags Model Msg
+main : Program () Model Msg
 main =
     Browser.element
         { init = init
@@ -28,31 +26,23 @@ main =
         }
 
 
-init : Flags -> ( Model, Cmd Msg )
-init flags =
-    let
-        ( tabsModel, tabsCmd ) =
-            Tabs.init flags
-    in
-    ( tabsModel, Cmd.map TabsMsg tabsCmd )
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( (), Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        TabsMsg tabsMsg ->
-            let
-                ( nextModel, nextCmd ) =
-                    Tabs.update tabsMsg model
-            in
-            ( nextModel, Cmd.map TabsMsg nextCmd )
+        NoOp ->
+            ( model, Cmd.none )
 
 
 view : Model -> Html Msg
-view model =
-    Html.map TabsMsg (Tabs.view model)
+view _ =
+    div [] [ text "Hello, world!" ]
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.map TabsMsg (Tabs.subscriptions model)
+subscriptions _ =
+    Sub.none
