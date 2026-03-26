@@ -3,7 +3,7 @@ SHELL := /usr/bin/env bash
 ROOT_DIR := $(CURDIR)
 SERVER_DIR := $(ROOT_DIR)/src/server
 UI_DIR := $(ROOT_DIR)/src/ui
-BACKEND_PROXY_URL := http://localhost:8081
+BACKEND_PROXY_URL := http://localhost:8081/api
 UI_BUILD_DIR := $(UI_DIR)/out
 UI_BUILD_OUTPUT := out/app.js
 UI_START_PAGE := index.html
@@ -33,4 +33,4 @@ frontend: _frontend-copy-static
 	cd $(UI_DIR) && elm make src/Main.elm --output=$(UI_BUILD_OUTPUT)
 
 frontend-watch: _frontend-copy-static
-	cd $(UI_DIR) && elm-live src/Main.elm --port=8082 --pushstate --dir=out --start-page=$(UI_START_PAGE) --proxy-host=$(BACKEND_PROXY_URL) --proxy-prefix=/api --proxy-prefix=/healthz --proxy-prefix=/swagger --open -- --output=$(UI_BUILD_OUTPUT)
+	cd $(UI_DIR) && elm-live src/Main.elm --port=8082 --pushstate --dir=out --start-page=$(UI_START_PAGE) --proxy-host=$(BACKEND_PROXY_URL) --proxy-prefix=/api --open -- --output=$(UI_BUILD_OUTPUT)

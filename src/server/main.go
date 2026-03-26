@@ -35,7 +35,7 @@ func main() {
 
 	router := gin.Default()
 	router.Use(corsMiddleware())
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/api/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	registerRoutes(router, app)
 
 	server := &http.Server{

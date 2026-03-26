@@ -21,7 +21,7 @@ type routeHandlers struct {
 func registerRoutes(router *gin.Engine, app Application) {
 	handlers := routeHandlers{app: app}
 
-	router.GET("/healthz", handlers.healthz)
+	router.GET("/api/healthz", handlers.healthz)
 	router.GET("/api/application", handlers.getApplication)
 	router.GET("/api/node", handlers.getNode)
 	router.GET("/api/node/ping-requests", handlers.listNodePingRequests)

@@ -2,6 +2,7 @@ module Route exposing (Route(..), navigationPages, pageKey, pageTitle, parse)
 
 import Pages.About
 import Pages.Api
+import Pages.NodeState
 import Pages.Overview
 import Url
 
@@ -10,68 +11,95 @@ type Route
     = Overview
     | Api
     | About
+    | NodeState
     | NotFound
+
+
+type alias RouteDefinition =
+    { route : Route
+    , title : String
+    , key : String
+    }
 
 
 navigationPages : List { title : String, key : String }
 navigationPages =
-    [ pageDescription Pages.Overview.page
-    , pageDescription Pages.Api.page
-    , pageDescription Pages.About.page
-    ]
+    List.map pageDescription routeDefinitions
 
 
 parse : Url.Url -> Route
 parse url =
-    case url.path of
-        "/" ->
-            Overview
+    case routeForPath url.path of
+        Just route ->
+            route
 
-        "/overview" ->
-            Overview
+        Nothing ->
+            if url.path == "/" then
+                defaultRoute
 
-        "/api-doc" ->
-            Api
-
-        "/about" ->
-            About
-
-        _ ->
-            NotFound
+            else
+                NotFound
 
 
 pageKey : Route -> Maybe String
 pageKey route =
-    case route of
-        Overview ->
-            Just Pages.Overview.page.key
-
-        Api ->
-            Just Pages.Api.page.key
-
-        About ->
-            Just Pages.About.page.key
-
-        NotFound ->
-            Nothing
+    findRouteDefinition route |> Maybe.map .key
 
 
 pageTitle : Route -> String
 pageTitle route =
-    case route of
-        Overview ->
-            Pages.Overview.page.title
+    case findRouteDefinition route of
+        Just definition ->
+            definition.title
 
-        Api ->
-            Pages.Api.page.title
-
-        About ->
-            Pages.About.page.title
-
-        NotFound ->
+        Nothing ->
             "Not found"
 
 
-pageDescription : { page | title : String, key : String } -> { title : String, key : String }
-pageDescription page =
-    { title = page.title, key = page.key }
+routeDefinitions : List RouteDefinition
+routeDefinitions =
+    [ { route = Overview
+      , title = Pages.Overview.page.title
+      , key = Pages.Overview.page.key
+      }
+    , { route = Api
+      , title = Pages.Api.page.title
+      , key = Pages.Api.page.key
+      }
+    , { route = NodeState
+      , title = Pages.NodeState.page.title
+      , key = Pages.NodeState.page.key
+      }
+    , { route = About
+      , title = Pages.About.page.title
+      , key = Pages.About.page.key
+      }
+    ]
+
+
+defaultRoute : Route
+defaultRoute =
+    routeDefinitions
+        |> List.head
+        |> Maybe.map .route
+        |> Maybe.withDefault NotFound
+
+
+routeForPath : String -> Maybe Route
+routeForPath path =
+    routeDefinitions
+        |> List.filter (\definition -> definition.key == path)
+        |> List.head
+        |> Maybe.map .route
+
+
+findRouteDefinition : Route -> Maybe RouteDefinition
+findRouteDefinition route =
+    routeDefinitions
+        |> List.filter (\definition -> definition.route == route)
+        |> List.head
+
+
+pageDescription : RouteDefinition -> { title : String, key : String }
+pageDescription definition =
+    { title = definition.title, key = definition.key }

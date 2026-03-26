@@ -7,6 +7,7 @@ import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
 import Pages.About
 import Pages.Api
+import Pages.NodeState
 import Pages.Overview
 import Route
 import Url
@@ -16,6 +17,7 @@ type CurrentPage
     = OverviewPage Pages.Overview.Model
     | ApiPage Pages.Api.Model
     | AboutPage Pages.About.Model
+    | NodeStatePage Pages.NodeState.Model
     | NotFoundPage
 
 
@@ -34,6 +36,7 @@ type Msg
     | OverviewMsg Pages.Overview.Msg
     | ApiMsg Pages.Api.Msg
     | AboutMsg Pages.About.Msg
+    | NodeStateMsg Pages.NodeState.Msg
 
 
 main : Program () Model Msg
@@ -136,6 +139,20 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        NodeStateMsg pageMsg ->
+            case model.currentPage of
+                NodeStatePage pageModel ->
+                    let
+                        ( newPageModel, pageCmd ) =
+                            Pages.NodeState.update pageMsg pageModel
+                    in
+                    ( { model | currentPage = NodeStatePage newPageModel }
+                    , Cmd.map NodeStateMsg pageCmd
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
         AboutMsg pageMsg ->
             case model.currentPage of
                 AboutPage pageModel ->
@@ -189,6 +206,13 @@ initCurrentPage route =
             in
             ( ApiPage pageModel, Cmd.map ApiMsg pageCmd )
 
+        Route.NodeState ->
+            let
+                ( pageModel, pageCmd ) =
+                    Pages.NodeState.init ()
+            in
+            ( NodeStatePage pageModel, Cmd.map NodeStateMsg pageCmd )
+
         Route.About ->
             let
                 ( pageModel, pageCmd ) =
@@ -211,6 +235,9 @@ currentPageView currentPage =
 
         AboutPage pageModel ->
             Html.map AboutMsg (Pages.About.view pageModel)
+
+        NodeStatePage pageModel ->
+            Html.map NodeStateMsg (Pages.NodeState.view pageModel)
 
         NotFoundPage ->
             div [] [ text "Page not found." ]
