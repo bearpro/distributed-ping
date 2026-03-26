@@ -1,7 +1,7 @@
 module Pages.NodeState exposing (Model, Msg, init, page, update, view)
 
 import Abstractions exposing (Page)
-import Html exposing (Html, a, div, li, nav, span, text, ul)
+import Html exposing (Html, a, div, li, nav, pre, span, text, ul)
 import Html.Attributes exposing (class, href)
 import Http
 import Json.Decode as Decode
@@ -46,7 +46,11 @@ view : Model -> Html Msg
 view model =
     case ( model.nodeState, model.error ) of
         ( Just state, _ ) ->
-            div [] [ text (prettyJson state) ]
+            div []
+                [ pre
+                    [ class "mono-text", class "text-bg-dark" ]
+                    [ text (prettyJson state) ]
+                ]
 
         ( Nothing, False ) ->
             div []
@@ -67,7 +71,7 @@ prettyJson : String -> String
 prettyJson raw =
     case Decode.decodeString Decode.value raw of
         Ok value ->
-            Encode.encode 4 value
+            Encode.encode 2 value
 
         Err _ ->
             raw

@@ -7,7 +7,7 @@ BACKEND_PROXY_URL := http://localhost:8081/api
 UI_BUILD_DIR := $(UI_DIR)/out
 UI_BUILD_OUTPUT := out/app.js
 UI_START_PAGE := index.html
-UI_STATIC_FILES := index.html favicon.ico
+UI_STATIC_FILES := index.html favicon.ico style.css
 
 .PHONY: backend backend-run backend-watch backend-swagger frontend frontend-watch _frontend-build-dir _frontend-copy-static
 
