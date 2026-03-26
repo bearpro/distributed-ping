@@ -27,7 +27,7 @@ update msg model =
 
 view : Model -> Html Msg
 view _ =
-    div [] [ span [] [ text "This is what I am talking about" ] ]
+    div [] [ span [] [ text "Swagger will be here" ] ]
 
 
 page : Page Model Msg

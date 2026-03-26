@@ -1,25 +1,28 @@
 module Main exposing (main)
 
-import Abstractions exposing (Page)
 import Browser
 import Browser.Navigation
 import Components.Navbar as Navbar
 import Html exposing (Html, div, text)
-import Html.Attributes exposing (title)
+import Html.Attributes exposing (class)
 import Pages.About
 import Pages.Api
 import Pages.Overview
+import Route
 import Url
 
 
 type CurrentPage
-    = Overview Pages.Overview.Model
-    | Api Pages.Api.Model
-    | About Pages.About.Model
+    = OverviewPage Pages.Overview.Model
+    | ApiPage Pages.Api.Model
+    | AboutPage Pages.About.Model
+    | NotFoundPage
 
 
 type alias Model =
-    { navbar : Navbar.Model
+    { navigationKey : Browser.Navigation.Key
+    , navbar : Navbar.Model
+    , route : Route.Route
     , currentPage : CurrentPage
     }
 
@@ -28,6 +31,9 @@ type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | NavbarMsg Navbar.Msg
+    | OverviewMsg Pages.Overview.Msg
+    | ApiMsg Pages.Api.Msg
+    | AboutMsg Pages.About.Msg
 
 
 main : Program () Model Msg
@@ -45,32 +51,54 @@ main =
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
 init () url key =
     let
-        pageDescription =
-            \page -> { title = page.title, key = page.key }
-
-        pages =
-            [ pageDescription Pages.Overview.page
-            , pageDescription Pages.Api.page
-            , pageDescription Pages.About.page
-            ]
-
         ( tabModel, tabCmd ) =
-            Navbar.init pages
+            Navbar.init Route.navigationPages
 
-        ( pageModel, pageCmd ) =
-            Pages.Overview.init ()
+        route =
+            Route.parse url
 
-        currentPage =
-            Overview pageModel
+        ( currentPage, pageCmd ) =
+            initCurrentPage route
+
+        navbar =
+            Navbar.selectPage (Route.pageKey route) tabModel
     in
-    ( { currentPage = currentPage, navbar = tabModel }
-    , Cmd.map NavbarMsg tabCmd
+    ( { navigationKey = key
+      , currentPage = currentPage
+      , route = route
+      , navbar = navbar
+      }
+    , Cmd.batch [ Cmd.map NavbarMsg tabCmd, pageCmd ]
     )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        LinkClicked urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model, Browser.Navigation.pushUrl model.navigationKey (Url.toString url) )
+
+                Browser.External href ->
+                    ( model, Browser.Navigation.load href )
+
+        UrlChanged url ->
+            let
+                route =
+                    Route.parse url
+
+                ( currentPage, pageCmd ) =
+                    initCurrentPage route
+            in
+            ( { model
+                | currentPage = currentPage
+                , route = route
+                , navbar = Navbar.selectPage (Route.pageKey route) model.navbar
+              }
+            , pageCmd
+            )
+
         NavbarMsg tabsMsg ->
             let
                 ( newTabModel, newTabsMsg ) =
@@ -80,8 +108,47 @@ update msg model =
             , Cmd.map NavbarMsg newTabsMsg
             )
 
-        _ ->
-            ( model, Cmd.none )
+        OverviewMsg pageMsg ->
+            case model.currentPage of
+                OverviewPage pageModel ->
+                    let
+                        ( newPageModel, pageCmd ) =
+                            Pages.Overview.update pageMsg pageModel
+                    in
+                    ( { model | currentPage = OverviewPage newPageModel }
+                    , Cmd.map OverviewMsg pageCmd
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        ApiMsg pageMsg ->
+            case model.currentPage of
+                ApiPage pageModel ->
+                    let
+                        ( newPageModel, pageCmd ) =
+                            Pages.Api.update pageMsg pageModel
+                    in
+                    ( { model | currentPage = ApiPage newPageModel }
+                    , Cmd.map ApiMsg pageCmd
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        AboutMsg pageMsg ->
+            case model.currentPage of
+                AboutPage pageModel ->
+                    let
+                        ( newPageModel, pageCmd ) =
+                            Pages.About.update pageMsg pageModel
+                    in
+                    ( { model | currentPage = AboutPage newPageModel }
+                    , Cmd.map AboutMsg pageCmd
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
 
 
 view : Model -> Browser.Document Msg
@@ -90,11 +157,12 @@ view model =
         body =
             [ div []
                 [ Html.map NavbarMsg (Navbar.view model.navbar)
+                , div [ class "container py-4" ] [ currentPageView model.currentPage ]
                 ]
             ]
 
         title =
-            "Distributed ping"
+            Route.pageTitle model.route ++ " | Distributed ping"
     in
     { title = title, body = body }
 
@@ -102,3 +170,47 @@ view model =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.none
+
+
+initCurrentPage : Route.Route -> ( CurrentPage, Cmd Msg )
+initCurrentPage route =
+    case route of
+        Route.Overview ->
+            let
+                ( pageModel, pageCmd ) =
+                    Pages.Overview.init ()
+            in
+            ( OverviewPage pageModel, Cmd.map OverviewMsg pageCmd )
+
+        Route.Api ->
+            let
+                ( pageModel, pageCmd ) =
+                    Pages.Api.init ()
+            in
+            ( ApiPage pageModel, Cmd.map ApiMsg pageCmd )
+
+        Route.About ->
+            let
+                ( pageModel, pageCmd ) =
+                    Pages.About.init ()
+            in
+            ( AboutPage pageModel, Cmd.map AboutMsg pageCmd )
+
+        Route.NotFound ->
+            ( NotFoundPage, Cmd.none )
+
+
+currentPageView : CurrentPage -> Html Msg
+currentPageView currentPage =
+    case currentPage of
+        OverviewPage pageModel ->
+            Html.map OverviewMsg (Pages.Overview.view pageModel)
+
+        ApiPage pageModel ->
+            Html.map ApiMsg (Pages.Api.view pageModel)
+
+        AboutPage pageModel ->
+            Html.map AboutMsg (Pages.About.view pageModel)
+
+        NotFoundPage ->
+            div [] [ text "Page not found." ]

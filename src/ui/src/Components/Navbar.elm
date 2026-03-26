@@ -1,9 +1,7 @@
-module Components.Navbar exposing (Model, Msg, init, update, view)
+module Components.Navbar exposing (Model, Msg, init, selectPage, update, view)
 
-import Abstractions exposing (Page)
 import Html exposing (Html, a, div, li, nav, text, ul)
 import Html.Attributes exposing (class, href)
-import Maybe exposing (withDefault)
 
 
 type alias PageDescription =
@@ -34,6 +32,11 @@ update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
+
+
+selectPage : Maybe String -> Model -> Model
+selectPage currentPageKey model =
+    { model | currentPageKey = currentPageKey }
 
 
 navItemView title key isActive =
