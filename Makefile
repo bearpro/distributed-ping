@@ -33,4 +33,4 @@ frontend: _frontend-copy-static
 	cd $(UI_DIR) && elm make src/Main.elm --output=$(UI_BUILD_OUTPUT)
 
 frontend-watch: _frontend-copy-static
-	cd $(UI_DIR) && elm-live src/Main.elm --port=8082 --dir=out --start-page=$(UI_START_PAGE) --proxy-host=$(BACKEND_PROXY_URL) --proxy-prefix=/api --proxy-prefix=/healthz --proxy-prefix=/swagger --open -- --output=$(UI_BUILD_OUTPUT)
+	cd $(UI_DIR) && elm-live src/Main.elm --port=8082 --pushstate --dir=out --start-page=$(UI_START_PAGE) --proxy-host=$(BACKEND_PROXY_URL) --proxy-prefix=/api --proxy-prefix=/healthz --proxy-prefix=/swagger --open -- --output=$(UI_BUILD_OUTPUT)
